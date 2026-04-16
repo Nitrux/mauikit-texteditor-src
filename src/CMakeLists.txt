@@ -31,6 +31,7 @@ set(lib_HDRS
 
 ecm_target_qml_sources(MauiKitTextEditor${MAUI_MAJOR_VERSION} SOURCES
     controls.${QT_MAJOR_VERSION}/TextEditor.qml
+    controls.${QT_MAJOR_VERSION}/TextViewer.qml
     controls.${QT_MAJOR_VERSION}/ColorSchemesPage.qml)
 
 target_sources(MauiKitTextEditor${MAUI_MAJOR_VERSION}plugin

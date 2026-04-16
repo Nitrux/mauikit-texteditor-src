@@ -20,6 +20,7 @@ void TextEditorPlugin::registerTypes(const char *uri)
     qmlRegisterType<ColorSchemesModel>(uri, 1, 0, "ColorSchemesModel");
     qmlRegisterType<LineNumberModel>(uri, 1, 0, "LineNumberModel");
     qmlRegisterType(componentUrl(QStringLiteral("TextEditor.qml")), uri, 1, 0, "TextEditor");
+    qmlRegisterType(componentUrl(QStringLiteral("TextViewer.qml")), uri, 1, 0, "TextViewer");
     qmlRegisterType(componentUrl(QStringLiteral("ColorSchemesPage.qml")), uri, 1, 0, "ColorSchemesPage");
 }
 

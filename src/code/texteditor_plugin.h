@@ -5,6 +5,7 @@
 #pragma once
 
 #include <QDir>
+#include <QLibraryInfo>
 #include <QQmlExtensionPlugin>
 
 class TextEditorPlugin : public QQmlExtensionPlugin
@@ -20,9 +21,10 @@ private:
     QString resolveFileUrl(const QString &filePath) const
     {
 #if defined(Q_OS_ANDROID)
-        return QStringLiteral(":/qt/qml/org/mauikit/texteditor/") + filePath;
+        return QStringLiteral("qrc:/qt/qml/org/mauikit/texteditor/") + filePath;
 #else
-        return baseUrl().toString() + QLatin1Char('/') + filePath;
+        const QString qmlModulePath = QDir(QLibraryInfo::path(QLibraryInfo::QmlImportsPath)).filePath(QStringLiteral("org/mauikit/texteditor"));
+        return QUrl::fromLocalFile(QDir(qmlModulePath).filePath(filePath)).toString();
 #endif
     }
 };
