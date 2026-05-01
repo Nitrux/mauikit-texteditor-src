@@ -787,10 +787,11 @@ Page
 
         Rectangle
         {
+            Maui.Theme.inherit: true
             anchors.fill: parent
             anchors.topMargin: body.topPadding + body.textMargin
 
-            color: Maui.Theme.backgroundColor
+            color: document.backgroundColor
 
             function scheduleLayoutRefresh()
             {
