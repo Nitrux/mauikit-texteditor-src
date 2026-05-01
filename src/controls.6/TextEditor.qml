@@ -101,9 +101,34 @@ Page
         }
     }
 
-    onWidthChanged: body.update()
+    function scheduleLinesCounterReload()
+    {
+        body.update()
 
-    onHeightChanged: body.update()
+        if(!_linesCounter.active || !_linesCounter.item)
+        {
+            return
+        }
+
+        _linesCounter.item.scheduleLayoutRefresh()
+    }
+
+    function scheduleLinesCounterRebuild()
+    {
+        body.update()
+
+        if(!_linesCounter.active)
+        {
+            return
+        }
+
+        control.linesCounterReloadGate = false
+        _linesCounterReloadTimer.restart()
+    }
+
+    onWidthChanged: control.scheduleLinesCounterReload()
+
+    onHeightChanged: control.scheduleLinesCounterReload()
 
     /**
      * @brief Access to the editor text area.
@@ -191,7 +216,6 @@ Page
      */
     property bool showSpellingContextMenu: true
     property bool linesCounterReloadGate: true
-
     FontMetrics
     {
         id: fontMetrics
@@ -762,6 +786,11 @@ Page
 
             color: Maui.Theme.backgroundColor
 
+            function scheduleLayoutRefresh()
+            {
+                _linesCounterLayoutTimer.restart()
+            }
+
             // body.contentHeight / contentWidth are QBindable in Qt 6: they do NOT
             // emit signals, so Connections cannot observe them. QML property bindings
             // here ARE notified by the QBindable mechanism.
@@ -773,16 +802,26 @@ Page
             readonly property int  _bodyContentHeight: body.contentHeight
             readonly property real _bodyContentWidth:  body.contentWidth
 
+            Timer
+            {
+                id: _linesCounterLayoutTimer
+                interval: 0
+                repeat: false
+                onTriggered:
+                {
+                    _linesCounterList.forceLayout()
+                    _linesCounterList.contentY = _flickable.contentY
+                }
+            }
+
             on_BodyContentHeightChanged:
             {
-                _linesCounterList.forceLayout()
-                _linesCounterList.contentY = _flickable.contentY
+                scheduleLayoutRefresh()
             }
 
             on_BodyContentWidthChanged:
             {
-                _linesCounterList.forceLayout()
-                _linesCounterList.contentY = _flickable.contentY
+                scheduleLayoutRefresh()
             }
 
             ListView
@@ -953,6 +992,7 @@ Page
                 id: _linesCounter
                 asynchronous: true
                 active: control.showLineNumbers && !document.isRich && body.lineCount > 1 && control.linesCounterReloadGate
+                onLoaded: control.scheduleLinesCounterReload()
 
                 Layout.fillHeight: true
                 Layout.preferredWidth: active ? fontMetrics.averageCharacterWidth
@@ -970,7 +1010,7 @@ Page
                 onTriggered:
                 {
                     control.linesCounterReloadGate = true
-                    body.update()
+                    control.scheduleLinesCounterReload()
                 }
             }
 
@@ -979,11 +1019,7 @@ Page
                 target: body
                 function onWrapModeChanged()
                 {
-                    if(_linesCounter.active)
-                    {
-                        control.linesCounterReloadGate = false
-                        _linesCounterReloadTimer.restart()
-                    }
+                    control.scheduleLinesCounterRebuild()
                 }
             }
 
