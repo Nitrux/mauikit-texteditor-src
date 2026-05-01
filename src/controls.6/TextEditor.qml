@@ -184,6 +184,13 @@ Page
      */
     property bool spellcheckEnabled: false
 
+    /**
+     * @brief Whether the contextual menu should expose the spelling submenu.
+     * Apps that are not focused on prose editing can disable this while still
+     * keeping spell checking support available elsewhere.
+     */
+    property bool showSpellingContextMenu: true
+
     FontMetrics
     {
         id: fontMetrics
@@ -250,6 +257,7 @@ Page
             id: _menu
             property var spellcheckhighlighter: null
             property var spellcheckhighlighterLoader: null
+            readonly property bool spellingMenuVisible: control.showSpellingContextMenu && control.spellcheckEnabled
             property int restoredCursorPosition: 0
             property int restoredSelectionStart
             property int restoredSelectionEnd
@@ -263,42 +271,12 @@ Page
                 persistentSelectionSetting = body.persistentSelection
             }
 
-            Maui.MenuItemActionRow
-            {
-                Action
-                {
-                    icon.name: "edit-undo-symbolic"
-                    text: i18n("Undo")
-                    shortcut: StandardKey.Undo
-
-                    onTriggered:
-                    {
-                        documentMenu.deselectWhenMenuClosed = false;
-                        documentMenu.runOnMenuClose = () => body.undo();
-                    }
-                }
-
-                Action
-                {
-                    icon.name: "edit-redo-symbolic"
-                    text: i18n("Redo")
-                    shortcut: StandardKey.Redo
-
-                    onTriggered:
-                    {
-                        documentMenu.deselectWhenMenuClosed = false;
-                        documentMenu.runOnMenuClose = () => body.redo();
-                    }
-                }
-            }
-
             MenuItem
             {
                 action: Action
                 {
                     icon.name: "edit-copy-symbolic"
                     text: i18n("Copy")
-                    shortcut: StandardKey.Copy
                 }
 
                 onTriggered:
@@ -317,7 +295,6 @@ Page
                 action: Action {
                     icon.name: "edit-cut-symbolic"
                     text: i18n("Cut")
-                    shortcut: StandardKey.Cut
                 }
                 onTriggered:
                 {
@@ -335,7 +312,6 @@ Page
                 {
                     icon.name: "edit-paste-symbolic"
                     text: i18n("Paste")
-                    shortcut: StandardKey.Paste
                 }
 
                 onTriggered:
@@ -353,7 +329,6 @@ Page
                 {
                     icon.name: "edit-select-all-symbolic"
                     text: i18n("Select All")
-                    shortcut: StandardKey.SelectAll
                 }
 
                 onTriggered:
@@ -363,10 +338,20 @@ Page
                 }
             }
             
-            MenuSeparator {}
+            MenuSeparator
+            {
+                visible: _searchSelectedItem.visible
+                      || _emailItem.visible
+                      || _phoneItem.visible
+                      || _openLinkItem.visible
+                      || _deleteItem.visible
+                      || documentMenu.spellingMenuVisible
+                height: visible ? implicitHeight : -_menu.spacing
+            }
 
             MenuItem
             {
+                id: _searchSelectedItem
                 text: i18nd("mauikittexteditor","Search Selected Text on Google...")
                 onTriggered: Qt.openUrlExternally("https://www.google.com/search?q="+body.selectedText)
                 enabled: body.selectedText.length
@@ -376,6 +361,7 @@ Page
             
             MenuItem
             {
+                id: _emailItem
                 enabled: control.body.selectedText.length > 0 && Maui.Handy.isEmail(control.body.selectedText)
                 visible: enabled
                 height: visible ? implicitHeight : -_menu.spacing
@@ -386,6 +372,7 @@ Page
             
             MenuItem
             {
+                id: _phoneItem
                 enabled: control.body.selectedText.length > 0 && Maui.Handy.isPhoneNumber(control.body.selectedText)
                 visible: enabled
                 height: visible ? implicitHeight : -_menu.spacing
@@ -396,6 +383,7 @@ Page
             
             MenuItem
             {
+                id: _openLinkItem
                 enabled: control.body.selectedText.length > 0 && Maui.Handy.isWebLink(control.body.selectedText)
                 visible: enabled
                 height: visible ? implicitHeight : -_menu.spacing
@@ -404,10 +392,19 @@ Page
                 onTriggered: Qt.openUrlExternally(control.body.selectedText)
             }
 
-            MenuSeparator {}
+            MenuSeparator
+            {
+                visible: (_searchSelectedItem.visible
+                       || _emailItem.visible
+                       || _phoneItem.visible
+                       || _openLinkItem.visible)
+                      && (_deleteItem.visible || documentMenu.spellingMenuVisible)
+                height: visible ? implicitHeight : -_menu.spacing
+            }
             
             MenuItem
             {
+                id: _deleteItem
                 enabled: !control.body.readOnly && control.body.selectedText
                 visible: enabled
                 height: visible ? implicitHeight : -_menu.spacing
@@ -415,7 +412,6 @@ Page
                 {
                     icon.name: "edit-delete-symbolic"
                     text: i18n("Delete")
-                    shortcut: StandardKey.Delete
                 }
                 
                 onTriggered:
@@ -425,93 +421,103 @@ Page
                 }
             }
 
-            Menu
+            MenuSeparator
             {
-                id: _spellingMenu
-                title: i18nd("mauikittexteditor","Spelling")
-                enabled: control.spellcheckEnabled
-                visible: enabled
+                visible: _deleteItem.visible && documentMenu.spellingMenuVisible
                 height: visible ? implicitHeight : -_menu.spacing
+            }
 
-                Instantiator
+            Loader
+            {
+                id: _spellingMenuLoader
+                active: documentMenu.spellingMenuVisible
+                asynchronous: false
+
+                sourceComponent: Menu
                 {
-                    id: _suggestions
-                    active: !control.body.readOnly && documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled
-                    model: documentMenu.suggestions
-                    delegate: MenuItem
+                    id: _spellingMenu
+                    title: i18nd("mauikittexteditor","Spelling")
+
+                    Instantiator
                     {
-                        text: modelData
-                        onClicked:
+                        id: _suggestions
+                        active: !control.body.readOnly && documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled
+                        model: documentMenu.suggestions
+                        delegate: MenuItem
                         {
-                            documentMenu.deselectWhenMenuClosed = false;
-                            documentMenu.runOnMenuClose = () => documentMenu.spellcheckhighlighter.replaceWord(modelData);
+                            text: modelData
+                            onClicked:
+                            {
+                                documentMenu.deselectWhenMenuClosed = false;
+                                documentMenu.runOnMenuClose = () => documentMenu.spellcheckhighlighter.replaceWord(modelData);
+                            }
+                        }
+
+                        onObjectAdded: (index, object) =>
+                                       {
+                                           _spellingMenu.insertItem(0, object)
+                                       }
+
+                        onObjectRemoved: (index, object) =>
+                                         {
+                                             _spellingMenu.removeItem(_spellingMenu.itemAt(0))
+                                         }
+                    }
+
+                    MenuSeparator
+                    {
+                        enabled: !control.body.readOnly && ((documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled) || (documentMenu.spellcheckhighlighterLoader && documentMenu.spellcheckhighlighterLoader.activable))
+                    }
+
+                    MenuItem
+                    {
+                        enabled: !control.body.readOnly && documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled && documentMenu.suggestions.length === 0
+                        action: Action
+                        {
+                            text: documentMenu.spellcheckhighlighter ? i18n("No suggestions for \"%1\"").arg(documentMenu.spellcheckhighlighter.wordUnderMouse) : ''
+                            enabled: false
                         }
                     }
 
-                    onObjectAdded: (index, object) =>
-                                   {
-                                       _spellingMenu.insertItem(0, object)
-                                   }
-
-                    onObjectRemoved: (index, object) =>
-                                     {
-                                         _spellingMenu.removeItem(_spellingMenu.itemAt(0))
-                                     }
-                }
-
-                MenuSeparator
-                {
-                    enabled: !control.body.readOnly && ((documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled) || (documentMenu.spellcheckhighlighterLoader && documentMenu.spellcheckhighlighterLoader.activable))
-                }
-
-                MenuItem
-                {
-                    enabled: !control.body.readOnly && documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled && documentMenu.suggestions.length === 0
-                    action: Action
+                    MenuItem
                     {
-                        text: documentMenu.spellcheckhighlighter ? i18n("No suggestions for \"%1\"").arg(documentMenu.spellcheckhighlighter.wordUnderMouse) : ''
-                        enabled: false
-                    }
-                }
-
-                MenuItem
-                {
-                    enabled: !control.body.readOnly && documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled
-                    action: Action
-                    {
-                        text: documentMenu.spellcheckhighlighter ? i18n("Add \"%1\" to dictionary").arg(documentMenu.spellcheckhighlighter.wordUnderMouse) : ''
-                        onTriggered:
+                        enabled: !control.body.readOnly && documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled
+                        action: Action
                         {
-                            documentMenu.deselectWhenMenuClosed = false;
-                            documentMenu.runOnMenuClose = () => spellcheckhighlighter.addWordToDictionary(documentMenu.spellcheckhighlighter.wordUnderMouse);
+                            text: documentMenu.spellcheckhighlighter ? i18n("Add \"%1\" to dictionary").arg(documentMenu.spellcheckhighlighter.wordUnderMouse) : ''
+                            onTriggered:
+                            {
+                                documentMenu.deselectWhenMenuClosed = false;
+                                documentMenu.runOnMenuClose = () => spellcheckhighlighter.addWordToDictionary(documentMenu.spellcheckhighlighter.wordUnderMouse);
+                            }
                         }
                     }
-                }
 
-                MenuItem
-                {
-                    enabled: !control.body.readOnly && documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled
-                    action: Action
+                    MenuItem
                     {
-                        text: i18n("Ignore")
-                        onTriggered:
+                        enabled: !control.body.readOnly && documentMenu.spellcheckhighlighter !== null && documentMenu.spellcheckhighlighter.active && documentMenu.spellcheckhighlighter.wordIsMisspelled
+                        action: Action
                         {
-                            documentMenu.deselectWhenMenuClosed = false;
-                            documentMenu.runOnMenuClose = () => documentMenu.spellcheckhighlighter.ignoreWord(documentMenu.spellcheckhighlighter.wordUnderMouse);
+                            text: i18n("Ignore")
+                            onTriggered:
+                            {
+                                documentMenu.deselectWhenMenuClosed = false;
+                                documentMenu.runOnMenuClose = () => documentMenu.spellcheckhighlighter.ignoreWord(documentMenu.spellcheckhighlighter.wordUnderMouse);
+                            }
                         }
                     }
-                }
 
-                MenuItem
-                {
-                    enabled: !control.body.readOnly && documentMenu.spellcheckhighlighterLoader && documentMenu.spellcheckhighlighterLoader.activable
-                    checkable: true
-                    checked: documentMenu.spellcheckhighlighter ? documentMenu.spellcheckhighlighter.active : false
-                    text: i18n("Enable Spellchecker")
-                    onCheckedChanged:
+                    MenuItem
                     {
-                        spellcheckhighlighterLoader.active = checked;
-                        documentMenu.spellcheckhighlighter = documentMenu.spellcheckhighlighterLoader.item;
+                        enabled: !control.body.readOnly && documentMenu.spellcheckhighlighterLoader && documentMenu.spellcheckhighlighterLoader.activable
+                        checkable: true
+                        checked: documentMenu.spellcheckhighlighter ? documentMenu.spellcheckhighlighter.active : false
+                        text: i18n("Enable Spellchecker")
+                        onCheckedChanged:
+                        {
+                            spellcheckhighlighterLoader.active = checked;
+                            documentMenu.spellcheckhighlighter = documentMenu.spellcheckhighlighterLoader.item;
+                        }
                     }
                 }
             }
@@ -567,49 +573,51 @@ Page
         }
     }
 
-    footer: Column
+    footer: Maui.ToolBar
     {
+        id: _findToolBar
+        visible: showFindBar
         width: parent.width
+        position: ToolBar.Footer
+        forceCenterMiddleContent: false
 
-        Maui.ToolBar
-        {
-            id: _findToolBar
-            visible: showFindBar
-            width: parent.width
-            position: ToolBar.Footer
-
-            rightContent: ToolButton
+        leftContent: [
+            ToolButton
             {
-                id: _replaceButton
-                icon.name: "edit-find-replace"
+                id: _findCaseSensitively
+                icon.name: "format-text-uppercase"
                 checkable: true
-                checked: false
-            }
 
-            leftContent: Maui.ToolButtonMenu
+                ToolTip.delay: 1000
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: i18nd("mauikittexteditor", "Case Sensitive")
+            },
+
+            ToolButton
             {
-                icon.name: "overflow-menu"
+                id: _findWholeWords
+                icon.name: "edit-select-text"
+                checkable: true
 
-                MenuItem
-                {
-                    id: _findCaseSensitively
-                    checkable: true
-                    text: i18nd("mauikittexteditor","Case Sensitive")
-                }
-
-                MenuItem
-                {
-                    id: _findWholeWords
-                    checkable: true
-                    text: i18nd("mauikittexteditor","Whole Words Only")
-                }
+                ToolTip.delay: 1000
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: i18nd("mauikittexteditor", "Whole Words Only")
             }
+        ]
 
-            middleContent: Maui.SearchField
+        middleContent: RowLayout
+        {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignCenter
+            spacing: Maui.Style.space.small
+
+            Maui.SearchField
             {
                 id: _findField
                 Layout.fillWidth: true
-                Layout.maximumWidth: 500
+                Layout.maximumWidth: _replaceButton.checked ? 320 : 500
                 Layout.alignment: Qt.AlignCenter
                 placeholderText: i18nd("mauikittexteditor","Find")
 
@@ -628,24 +636,16 @@ Page
                     }
                 ]
             }
-        }
 
-        Maui.ToolBar
-        {
-            id: _replaceToolBar
-            position: ToolBar.Footer
-            visible: _replaceButton.checked && _findToolBar.visible
-            width: parent.width
-            enabled: !body.readOnly
-            forceCenterMiddleContent: false
-
-            middleContent: Maui.SearchField
+            Maui.SearchField
             {
                 id: _replaceField
-                placeholderText: i18nd("mauikittexteditor","Replace")
-                Layout.fillWidth: true
-                Layout.maximumWidth: 500
+                visible: _replaceButton.checked
+                enabled: visible && !body.readOnly
+                Layout.fillWidth: visible
+                Layout.maximumWidth: visible ? 320 : 0
                 Layout.alignment: Qt.AlignCenter
+                placeholderText: i18nd("mauikittexteditor","Replace")
                 icon.source: "edit-find-replace"
                 actions: Action
                 {
@@ -655,10 +655,30 @@ Page
                     onTriggered: document.replace(_findField.text, _replaceField.text)
                 }
             }
+        }
 
-            rightContent: Button
+        rightContent: RowLayout
+        {
+            spacing: Maui.Style.space.small
+
+            ToolButton
             {
-                enabled: _replaceField.text.length
+                id: _replaceButton
+                icon.name: "edit-find-replace"
+                enabled: !body.readOnly
+                checkable: true
+                checked: false
+
+                ToolTip.delay: 1000
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: i18nd("mauikittexteditor", "Replace")
+            }
+
+            Button
+            {
+                visible: _replaceButton.checked
+                enabled: !body.readOnly && _replaceField.text.length
                 text: i18nd("mauikittexteditor","Replace All")
                 onClicked: document.replaceAll(_findField.text, _replaceField.text)
             }
@@ -739,7 +759,7 @@ Page
             anchors.fill: parent
             anchors.topMargin: body.topPadding + body.textMargin
 
-            color: Qt.darker(Maui.Theme.backgroundColor, 1.2)
+            color: Maui.Theme.backgroundColor
 
             ListView
             {
@@ -764,6 +784,8 @@ Page
                     id: _delegate
 
                     readonly property int line : index
+                    readonly property int visualLineCount: body.wrapMode === Text.NoWrap ? 1 : Math.max(1, Math.ceil(document.lineHeight(line) / Math.ceil(fontMetrics.lineSpacing)))
+                    readonly property int wrappedVisualLines: Math.max(0, visualLineCount - 1)
                     // property bool foldable : control.document.isFoldable(line)
 
                     width: ListView.view.width
@@ -793,28 +815,98 @@ Page
 
                         function onWrapModeChanged()
                         {
+                            body.update()
                             _delegate.height = control.document.lineHeight(_delegate.line)
+                            _linesCounterList.forceLayout()
+                            _linesCounterList.contentY = _flickable.contentY
                         }
                     }
 
-                    Label
+                    Column
                     {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
+                        spacing: 0
 
-                        opacity: isCurrentItem  ? 1 : 0.7
-                        color: isCurrentItem ? control.Maui.Theme.highlightedTextColor  : control.body.color
-                        font.pointSize: Math.min(Maui.Style.fontSizes.medium, body.font.pointSize)
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignTop
-                        //                                         renderType: Text.NativeRendering
-                        font.family: "Monospace"
-                        text: index+1
-
-                        background: Rectangle
+                        Repeater
                         {
-                            visible: isCurrentItem
-                            color: Maui.Theme.highlightColor
+                            model: _delegate.visualLineCount
+
+                            delegate: Item
+                            {
+                                required property int index
+
+                                readonly property real gutterTrackWidth:
+                                    Math.max(
+                                        fontMetrics.averageCharacterWidth * (Math.floor(Math.log10(body.lineCount)) + 1),
+                                        fontMetrics.averageCharacterWidth * 2
+                                    )
+
+                                width: parent.width
+                                height: _delegate.height / _delegate.visualLineCount
+
+                                Item
+                                {
+                                    id: _gutterTrack
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    width: parent.gutterTrackWidth
+                                }
+
+                                Label
+                                {
+                                    anchors.fill: _gutterTrack
+                                    visible: index === 0
+                                    opacity: _delegate.isCurrentItem ? 1 : 0.7
+                                    color: control.body.color
+                                    font.family: body.font.family
+                                    font.pointSize: body.font.pointSize
+                                    font.weight: body.font.weight
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignTop
+                                    text: _delegate.line + 1
+                                }
+
+                                Canvas
+                                {
+                                    anchors.fill: _gutterTrack
+                                    visible: body.wrapMode !== Text.NoWrap && index > 0
+                                    opacity: _delegate.isCurrentItem ? 1 : 0.7
+
+                                    onPaint:
+                                    {
+                                        const ctx = getContext("2d")
+                                        ctx.reset()
+
+                                        const color = control.body.color
+                                        const arrowY = height * 0.5
+                                        const stemX = width * 0.5
+                                        const elbowX = width * 0.62
+                                        const tipX = width * 0.9
+                                        const headSize = Math.max(2, Math.min(width, height) * 0.14)
+
+                                        ctx.strokeStyle = color
+                                        ctx.fillStyle = color
+                                        ctx.lineWidth = Math.max(1, height * 0.08)
+                                        ctx.lineCap = "round"
+                                        ctx.lineJoin = "round"
+
+                                        ctx.beginPath()
+                                        ctx.moveTo(stemX, height * 0.18)
+                                        ctx.lineTo(stemX, arrowY)
+                                        ctx.lineTo(elbowX, arrowY)
+                                        ctx.stroke()
+
+                                        ctx.beginPath()
+                                        ctx.moveTo(tipX, arrowY)
+                                        ctx.lineTo(elbowX, arrowY - headSize)
+                                        ctx.lineTo(elbowX, arrowY + headSize)
+                                        ctx.closePath()
+                                        ctx.fill()
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -853,11 +945,11 @@ Page
             {
                 id: _linesCounter
                 asynchronous: true
-                active: control.showLineNumbers && !document.isRich && body.lineCount > 1 && body.wrapMode  === Text.NoWrap
+                active: control.showLineNumbers && !document.isRich && body.lineCount > 1
 
                 Layout.fillHeight: true
                 Layout.preferredWidth: active ? fontMetrics.averageCharacterWidth
-                                                * (Math.floor(Math.log10(body.lineCount)) + 1) + 10 : 0
+                                                * Math.max(2, Math.floor(Math.log10(body.lineCount)) + 1) + 10 : 0
 
 
                 sourceComponent: _linesCounterComponent
