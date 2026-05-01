@@ -20,7 +20,7 @@ Maui.ApplicationWindow
             onClicked: _editor.fileUrl = "file:///home/camiloh/nota/CMakeLists.txt"
         }
 
-        TE.TextEditor
+        TE.SimpleTextEditor
         {
             id: _editor
             anchors.fill: parent
@@ -29,4 +29,3 @@ Maui.ApplicationWindow
         }
     }
 }
-

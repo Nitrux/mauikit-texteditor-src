@@ -19,6 +19,8 @@ void TextEditorPlugin::registerTypes(const char *uri)
     qmlRegisterType<DocumentHandler>(uri, 1, 0, "DocumentHandler");
     qmlRegisterType<ColorSchemesModel>(uri, 1, 0, "ColorSchemesModel");
     qmlRegisterType<LineNumberModel>(uri, 1, 0, "LineNumberModel");
+    qmlRegisterType(componentUrl(QStringLiteral("CodeEditor.qml")), uri, 1, 0, "CodeEditor");
+    qmlRegisterType(componentUrl(QStringLiteral("SimpleTextEditor.qml")), uri, 1, 0, "SimpleTextEditor");
     qmlRegisterType(componentUrl(QStringLiteral("TextEditor.qml")), uri, 1, 0, "TextEditor");
     qmlRegisterType(componentUrl(QStringLiteral("TextViewer.qml")), uri, 1, 0, "TextViewer");
     qmlRegisterType(componentUrl(QStringLiteral("ColorSchemesPage.qml")), uri, 1, 0, "ColorSchemesPage");

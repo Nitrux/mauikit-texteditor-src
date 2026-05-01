@@ -11,6 +11,8 @@
 @section overview Introduction
 MauiKit Text Editor is a set of <a href="https://doc.qt.io/qt-6/qtquick-index.html">QtQuick</a> components and classes for viewing and editing plain text files, with support for syntax highlighing, find&replace, and many other built-in features. The visual controls are designed to integrate well with the rest of MauiKit controls and the Maui HIG.
 
+The module provides separate controls for read-only viewing, lightweight text editing, and advanced code-oriented editing workflows.
+
 You can think of this - and other - MauiKit Frameworks as KDE's KParts, where each module accomplishes a specific function and when plug together you can quickly assemble a more powerful app. Components like this one are usually used and shared among multiple Maui Applications.
 
 @image html nota.png "Nota app using the Text Editor controls"
@@ -20,8 +22,14 @@ MauiKit Text Editor has a set of visual controls and helper classes. Some of the
 
 @subsection views Visual Controls
 
-- @link TextEditor TextEditor @endlink
+- @link TextViewer TextViewer @endlink
+- @link SimpleTextEditor SimpleTextEditor @endlink
+- @link CodeEditor CodeEditor @endlink
 - @link ColorSchemesPage ColorSchemesPage @endlink
+
+@subsection compatibility Compatibility
+
+- @link TextEditor TextEditor @endlink (deprecated compatibility alias for SimpleTextEditor)
 
 @subsection classes Classes
 The helper classes are not part of a public API library, but instead are exposed to the QML engine and can be imported and used from QML
@@ -53,7 +61,7 @@ Maui.ApplicationWindow
             onClicked: _editor.fileUrl = "file:///home/camiloh/nota/CMakeLists.txt"
         }
 
-        TE.TextEditor
+        TE.SimpleTextEditor
         {
             id: _editor
             anchors.fill: parent

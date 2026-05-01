@@ -8,16 +8,21 @@ Maui.Page
 {
     id: control
 
-    property string path
+    property alias path: _document.fileUrl
+    property alias fileUrl: _document.fileUrl
     property int currentPage: _textArea.cursorPosition
+    readonly property alias body: _textArea
+    readonly property alias document: _document
 
     readonly property string title:
     {
-        if (path.length === 0)
+        const currentPath = String(fileUrl)
+
+        if (currentPath.length === 0)
             return ""
 
-        var lastSlash = path.lastIndexOf("/")
-        var fileName = lastSlash >= 0 ? path.substring(lastSlash + 1) : path
+        var lastSlash = currentPath.lastIndexOf("/")
+        var fileName = lastSlash >= 0 ? currentPath.substring(lastSlash + 1) : currentPath
         var lastDot = fileName.lastIndexOf(".")
         return lastDot > 0 ? fileName.substring(0, lastDot) : fileName
     }
@@ -28,7 +33,6 @@ Maui.Page
     {
         id: _document
         document: _textArea.textDocument
-        fileUrl: control.path
         enableSyntaxHighlighting: true
     }
 

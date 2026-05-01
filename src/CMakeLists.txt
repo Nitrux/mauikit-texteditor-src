@@ -30,6 +30,8 @@ set(lib_HDRS
     code/moduleinfo.h)
 
 ecm_target_qml_sources(MauiKitTextEditor${MAUI_MAJOR_VERSION} SOURCES
+    controls.${QT_MAJOR_VERSION}/CodeEditor.qml
+    controls.${QT_MAJOR_VERSION}/SimpleTextEditor.qml
     controls.${QT_MAJOR_VERSION}/TextEditor.qml
     controls.${QT_MAJOR_VERSION}/TextViewer.qml
     controls.${QT_MAJOR_VERSION}/ColorSchemesPage.qml)

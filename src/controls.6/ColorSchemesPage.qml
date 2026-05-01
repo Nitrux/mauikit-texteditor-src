@@ -38,7 +38,7 @@ import org.mauikit.texteditor as TE
  *    }
  * }
  * 
- * TE.TextEditor
+ * TE.CodeEditor
  * {
  *    id: _editor
  *    anchors.fill: parent

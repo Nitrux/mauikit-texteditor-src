@@ -232,7 +232,8 @@ Q_SIGNALS:
 
 /**
  * @brief The DocumentHandler class.
- * @note This is not part of any public API, and can it is only exposed as part of the TextEditor control.
+ * @note This is not part of any public API, and it is only exposed as part of
+ * the text editor controls.
  * 
  */
 class DocumentHandler : public QObject
