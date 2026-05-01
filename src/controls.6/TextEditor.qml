@@ -190,6 +190,7 @@ Page
      * keeping spell checking support available elsewhere.
      */
     property bool showSpellingContextMenu: true
+    property bool linesCounterReloadGate: true
 
     FontMetrics
     {
@@ -761,6 +762,29 @@ Page
 
             color: Maui.Theme.backgroundColor
 
+            // body.contentHeight / contentWidth are QBindable in Qt 6: they do NOT
+            // emit signals, so Connections cannot observe them. QML property bindings
+            // here ARE notified by the QBindable mechanism.
+            //
+            // contentHeight covers: typing that adds/removes lines, startup layout.
+            // contentWidth covers: the NoWrap→WordWrap toggle at runtime — observed
+            // to not change contentHeight but must change contentWidth (NoWrap
+            // contentWidth = longest-line width; WordWrap contentWidth = viewport width).
+            readonly property int  _bodyContentHeight: body.contentHeight
+            readonly property real _bodyContentWidth:  body.contentWidth
+
+            on_BodyContentHeightChanged:
+            {
+                _linesCounterList.forceLayout()
+                _linesCounterList.contentY = _flickable.contentY
+            }
+
+            on_BodyContentWidthChanged:
+            {
+                _linesCounterList.forceLayout()
+                _linesCounterList.contentY = _flickable.contentY
+            }
+
             ListView
             {
                 id: _linesCounterList
@@ -784,43 +808,26 @@ Page
                     id: _delegate
 
                     readonly property int line : index
-                    readonly property int visualLineCount: body.wrapMode === Text.NoWrap ? 1 : Math.max(1, Math.ceil(document.lineHeight(line) / Math.ceil(fontMetrics.lineSpacing)))
+                    readonly property int visualLineCount:
+                    {
+                        let _h = body.contentHeight  // QBindable dep: re-evaluate after typing/startup layout
+                        let _w = body.contentWidth   // QBindable dep: re-evaluate after NoWrap↔WordWrap toggle
+                        const rawH = document.lineHeight(line)
+                        const lineSpacing = Math.ceil(fontMetrics.lineSpacing)
+                        return body.wrapMode === Text.NoWrap ? 1 : Math.max(1, Math.ceil(rawH / lineSpacing))
+                    }
                     readonly property int wrappedVisualLines: Math.max(0, visualLineCount - 1)
                     // property bool foldable : control.document.isFoldable(line)
 
                     width: ListView.view.width
-                    height: Math.max(Math.ceil(fontMetrics.lineSpacing), document.lineHeight(line))
+                    height:
+                    {
+                        let _h = body.contentHeight  // QBindable dep: re-evaluate after typing/startup layout
+                        let _w = body.contentWidth   // QBindable dep: re-evaluate after NoWrap↔WordWrap toggle
+                        return Math.max(Math.ceil(fontMetrics.lineSpacing), document.lineHeight(line))
+                    }
 
                     readonly property bool isCurrentItem : document.currentLineIndex === index
-
-                    Connections
-                    {
-                        target: control.body
-
-                        function onContentHeightChanged()
-                        {
-                            if(body.wrapMode !== Text.NoWrap)
-                            {
-                                _delegate.height = control.document.lineHeight(_delegate.line)
-                            }
-
-                            if(_delegate.isCurrentItem)
-                            {
-                                console.log("Updating line height")
-                                // _delegate.foldable = control.document.isFoldable(_delegate.line)
-                            }
-
-                            _linesCounterList.contentY = _flickable.contentY
-                        }
-
-                        function onWrapModeChanged()
-                        {
-                            body.update()
-                            _delegate.height = control.document.lineHeight(_delegate.line)
-                            _linesCounterList.forceLayout()
-                            _linesCounterList.contentY = _flickable.contentY
-                        }
-                    }
 
                     Column
                     {
@@ -945,7 +952,7 @@ Page
             {
                 id: _linesCounter
                 asynchronous: true
-                active: control.showLineNumbers && !document.isRich && body.lineCount > 1
+                active: control.showLineNumbers && !document.isRich && body.lineCount > 1 && control.linesCounterReloadGate
 
                 Layout.fillHeight: true
                 Layout.preferredWidth: active ? fontMetrics.averageCharacterWidth
@@ -953,6 +960,31 @@ Page
 
 
                 sourceComponent: _linesCounterComponent
+            }
+
+            Timer
+            {
+                id: _linesCounterReloadTimer
+                interval: 0
+                repeat: false
+                onTriggered:
+                {
+                    control.linesCounterReloadGate = true
+                    body.update()
+                }
+            }
+
+            Connections
+            {
+                target: body
+                function onWrapModeChanged()
+                {
+                    if(_linesCounter.active)
+                    {
+                        control.linesCounterReloadGate = false
+                        _linesCounterReloadTimer.restart()
+                    }
+                }
             }
 
             ScrollView
