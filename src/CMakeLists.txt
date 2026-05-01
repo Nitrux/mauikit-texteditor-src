@@ -47,8 +47,8 @@ add_library(MauiKit${MAUI_MAJOR_VERSION}::TextEditor ALIAS MauiKitTextEditor${MA
 
 generate_export_header(MauiKitTextEditor${MAUI_MAJOR_VERSION} BASE_NAME TextEditor)
 set_target_properties(MauiKitTextEditor${MAUI_MAJOR_VERSION} PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION ${PROJECT_VERSION_MAJOR}
+    VERSION ${MAUIKIT_SO_VERSION}
+    SOVERSION ${MAUIKIT_SO_VERSION}
     EXPORT_NAME "TextEditor")
 
 target_include_directories(MauiKitTextEditor${MAUI_MAJOR_VERSION}

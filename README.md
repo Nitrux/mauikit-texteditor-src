@@ -1,25 +1,17 @@
-<!--
-SPDX-FileCopyrightText: 2020 Carl Schwan <carl@carlschwan.eu>
+# MauiKit TextEditor
 
-SPDX-License-Identifier: BSD-2-Clause
--->
+![](https://mauikit.org/wp-content/uploads/2018/12/maui_project_logo.png)
 
-# MauiKitTextEditor
+_Text editing and syntax highlighting components for MauiKit applications._
 
-## Introduction
+# Issues
 
-MauiKitTextEditor is a set of QtQuick components providing basic text editing
-capabilities.
+If you find problems with the contents of this repository, please create an issue and use the **🐞 Bug report** template.
 
-## Examples
+## Submitting a bug report
 
-An example can be found in [the examples folder](examples).
+Before submitting a bug, you should look at the [existing bug reports](https://github.com/Nitrux/mauikit-texteditor-src/issues) to verify that no one has reported the bug already.
 
-## License
+©2026 Nitrux Latinoamericana S.C.
 
-MauiKitTextEditor is a licensed under the Lesser General Public License version
-2.1 or later. A copy of the license can be found in
-[this repo](LICENSES/LGPL-2.1-or-later.txt).
-
-The examples are licensed under the 2-Clause BSD, that can be found in
-[here](LICENSES/BSD-2-Clause.txt).
+---
