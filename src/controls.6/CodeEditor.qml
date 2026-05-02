@@ -154,6 +154,23 @@ Page
         _linesCounterRebuildDebounceTimer.restart()
     }
 
+    function scheduleLinesCounterHardRebuild(reason)
+    {
+        control.logGutterDebug("scheduleLinesCounterHardRebuild reason=" + reason
+                               + " wrapMode=" + body.wrapMode
+                               + " contentWidth=" + body.contentWidth
+                               + " contentHeight=" + body.contentHeight)
+        body.update()
+
+        if(!_linesCounter.active)
+        {
+            return
+        }
+
+        control.linesCounterMountGate = false
+        _linesCounterHardRebuildTimer.restart()
+    }
+
     onWidthChanged:
     {
         control.logGutterDebug("editor width changed to " + width)
@@ -262,6 +279,7 @@ Page
      */
     property bool gutterDebugEnabled: false
     property bool wrapTransitionPending: false
+    property bool linesCounterMountGate: true
 
     /**
      * @brief Whether the contextual menu should expose the spelling submenu.
@@ -1109,11 +1127,12 @@ Page
             {
                 id: _linesCounter
                 asynchronous: true
-                active: control.showLineNumbers && !document.isRich && body.lineCount > 1
+                active: control.showLineNumbers && !document.isRich && body.lineCount > 1 && control.linesCounterMountGate
                 onLoaded:
                 {
                     control.logGutterDebug("linesCounter loaded")
                     control.scheduleLinesCounterReload()
+                    control.wrapTransitionPending = false
                 }
 
                 Layout.fillHeight: true
@@ -1132,6 +1151,17 @@ Page
                 onTriggered: control.scheduleLinesCounterRebuild()
             }
 
+            Timer
+            {
+                id: _linesCounterHardRebuildTimer
+                interval: 0
+                repeat: false
+                onTriggered:
+                {
+                    control.linesCounterMountGate = true
+                }
+            }
+
             Connections
             {
                 target: body
@@ -1141,7 +1171,7 @@ Page
                                            + " contentWidth=" + body.contentWidth
                                            + " contentHeight=" + body.contentHeight)
                     control.wrapTransitionPending = true
-                    control.scheduleLinesCounterRebuildDebounced("wrapMode")
+                    control.scheduleLinesCounterHardRebuild("wrapMode")
                 }
             }
 
