@@ -109,6 +109,9 @@ Page
 
     function scheduleLinesCounterReload()
     {
+        control.logGutterDebug("scheduleLinesCounterReload wrapMode=" + body.wrapMode
+                               + " contentWidth=" + body.contentWidth
+                               + " contentHeight=" + body.contentHeight)
         body.update()
 
         if(!_linesCounter.active || !_linesCounter.item)
@@ -121,20 +124,58 @@ Page
 
     function scheduleLinesCounterRebuild()
     {
+        control.logGutterDebug("scheduleLinesCounterRebuild wrapMode=" + body.wrapMode
+                               + " contentWidth=" + body.contentWidth
+                               + " contentHeight=" + body.contentHeight)
         body.update()
 
-        if(!_linesCounter.active)
+        if(!_linesCounter.active || !_linesCounter.item)
         {
             return
         }
 
-        control.linesCounterReloadGate = false
-        _linesCounterReloadTimer.restart()
+        _linesCounter.item.scheduleLayoutRefresh("rebuild")
     }
 
-    onWidthChanged: control.scheduleLinesCounterReload()
+    function scheduleLinesCounterRebuildDebounced(reason)
+    {
+        control.logGutterDebug("scheduleLinesCounterRebuildDebounced reason=" + reason
+                               + " wrapMode=" + body.wrapMode
+                               + " contentWidth=" + body.contentWidth
+                               + " contentHeight=" + body.contentHeight)
 
-    onHeightChanged: control.scheduleLinesCounterReload()
+        if(body.wrapMode === Text.NoWrap)
+        {
+            control.scheduleLinesCounterReload()
+            return
+        }
+
+        _linesCounterRebuildDebounceTimer.restart()
+    }
+
+    onWidthChanged:
+    {
+        control.logGutterDebug("editor width changed to " + width)
+        if(body.wrapMode === Text.NoWrap)
+        {
+            control.scheduleLinesCounterReload()
+        }else
+        {
+            control.scheduleLinesCounterRebuildDebounced("width")
+        }
+    }
+
+    onHeightChanged:
+    {
+        control.logGutterDebug("editor height changed to " + height)
+        if(body.wrapMode === Text.NoWrap)
+        {
+            control.scheduleLinesCounterReload()
+        }else
+        {
+            control.scheduleLinesCounterRebuildDebounced("height")
+        }
+    }
 
     /**
      * @brief Access to the editor text area.
@@ -216,12 +257,26 @@ Page
     property bool spellcheckEnabled: false
 
     /**
+     * @brief Whether to log gutter and editor geometry for debugging.
+     */
+    property bool gutterDebugEnabled: false
+
+    /**
      * @brief Whether the contextual menu should expose the spelling submenu.
      * Apps that are not focused on prose editing can disable this while still
      * keeping spell checking support available elsewhere.
      */
     property bool showSpellingContextMenu: true
-    property bool linesCounterReloadGate: true
+    function logGutterDebug(message)
+    {
+        if(!control.gutterDebugEnabled)
+        {
+            return
+        }
+
+        console.log("[CodeEditor gutter]", message)
+    }
+
     FontMetrics
     {
         id: fontMetrics
@@ -793,8 +848,42 @@ Page
 
             color: document.backgroundColor
 
-            function scheduleLayoutRefresh()
+            function dumpGeometry(reason)
             {
+                if(!control.gutterDebugEnabled)
+                {
+                    return
+                }
+
+                const samples = []
+                const maxSamples = Math.min(5, document.lineCount)
+
+                for(let i = 0; i < maxSamples; ++i)
+                {
+                    const item = _linesCounterRepeater.itemAt(i)
+                    samples.push("#" + (i + 1)
+                                 + ":docH=" + document.lineHeight(i)
+                                 + ",itemH=" + (item ? item.height : "na")
+                                 + ",visual=" + (item ? item.visualLineCount : "na"))
+                }
+
+                control.logGutterDebug(reason
+                                       + " wrapMode=" + body.wrapMode
+                                       + " flickY=" + _flickable.contentY
+                                       + " gutterOffsetY=" + (-_linesCounterContent.y)
+                                       + " viewport=" + _flickable.width + "x" + _flickable.height
+                                       + " content=" + body.contentWidth + "x" + body.contentHeight
+                                       + " gutterHeight=" + _linesCounterContent.height
+                                       + " topPadding=" + body.topPadding
+                                       + " textMargin=" + body.textMargin
+                                       + " lineSpacing=" + Math.ceil(fontMetrics.lineSpacing)
+                                       + " lineCount=" + document.lineCount
+                                       + " samples=" + samples.join("; "))
+            }
+
+            function scheduleLayoutRefresh(reason)
+            {
+                dumpGeometry("scheduleLayoutRefresh(" + reason + ")")
                 _linesCounterLayoutTimer.restart()
             }
 
@@ -816,172 +905,163 @@ Page
                 repeat: false
                 onTriggered:
                 {
-                    _linesCounterList.forceLayout()
-                    _linesCounterList.contentY = _flickable.contentY
+                    dumpGeometry("before forceLayout")
+                    _linesCounterColumn.forceLayout()
+                    dumpGeometry("after forceLayout")
                 }
             }
 
             on_BodyContentHeightChanged:
             {
-                scheduleLayoutRefresh()
+                scheduleLayoutRefresh("body.contentHeight")
             }
 
             on_BodyContentWidthChanged:
             {
-                scheduleLayoutRefresh()
+                scheduleLayoutRefresh("body.contentWidth")
             }
 
-            ListView
+            Item
             {
-                id: _linesCounterList
+                id: _linesCounterViewport
                 anchors.fill: parent
-                interactive: false
-                enabled: false
+                clip: true
 
-                Binding on contentY
+                Item
                 {
-                    value: _flickable.contentY
-                    restoreMode: Binding.RestoreBindingOrValue
-                }
+                    id: _linesCounterContent
+                    width: parent.width
+                    height: _linesCounterColumn.implicitHeight
+                    y: -_flickable.contentY
 
-                model: TE.LineNumberModel
-                {
-                    lineCount: body.text !== "" ? document.lineCount : 0
-                }
-
-                delegate: RowLayout
-                {
-                    id: _delegate
-
-                    readonly property int line : index
-                    readonly property int visualLineCount:
+                    onYChanged:
                     {
-                        let _h = body.contentHeight  // QBindable dep: re-evaluate after typing/startup layout
-                        let _w = body.contentWidth   // QBindable dep: re-evaluate after NoWrap↔WordWrap toggle
-                        const rawH = document.lineHeight(line)
-                        const lineSpacing = Math.ceil(fontMetrics.lineSpacing)
-                        return body.wrapMode === Text.NoWrap ? 1 : Math.max(1, Math.ceil(rawH / lineSpacing))
+                        dumpGeometry("gutter offset changed")
                     }
-                    readonly property int wrappedVisualLines: Math.max(0, visualLineCount - 1)
-                    // property bool foldable : control.document.isFoldable(line)
-
-                    width: ListView.view.width
-                    height:
-                    {
-                        let _h = body.contentHeight  // QBindable dep: re-evaluate after typing/startup layout
-                        let _w = body.contentWidth   // QBindable dep: re-evaluate after NoWrap↔WordWrap toggle
-                        return Math.max(Math.ceil(fontMetrics.lineSpacing), document.lineHeight(line))
-                    }
-
-                    readonly property bool isCurrentItem : document.currentLineIndex === index
 
                     Column
                     {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
+                        id: _linesCounterColumn
+                        width: parent.width
                         spacing: 0
 
                         Repeater
                         {
-                            model: _delegate.visualLineCount
+                            id: _linesCounterRepeater
+                            model: body.text !== "" ? document.lineCount : 0
 
                             delegate: Item
                             {
-                                required property int index
+                                id: _delegate
 
-                                readonly property real gutterTrackWidth:
-                                    Math.max(
-                                        fontMetrics.averageCharacterWidth * (Math.floor(Math.log10(body.lineCount)) + 1),
-                                        fontMetrics.averageCharacterWidth * 2
-                                    )
-
-                                width: parent.width
-                                height: _delegate.height / _delegate.visualLineCount
-
-                                Item
+                                readonly property int line : index
+                                readonly property int visualLineCount:
                                 {
-                                    id: _gutterTrack
-                                    anchors.top: parent.top
-                                    anchors.bottom: parent.bottom
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: parent.gutterTrackWidth
+                                    let _h = body.contentHeight
+                                    let _w = body.contentWidth
+                                    const rawH = document.lineHeight(line)
+                                    const lineSpacing = Math.ceil(fontMetrics.lineSpacing)
+                                    return body.wrapMode === Text.NoWrap ? 1 : Math.max(1, Math.ceil(rawH / lineSpacing))
+                                }
+                                readonly property bool isCurrentItem : document.currentLineIndex === index
+
+                                width: _linesCounterColumn.width
+                                height:
+                                {
+                                    let _h = body.contentHeight
+                                    let _w = body.contentWidth
+                                    return Math.max(Math.ceil(fontMetrics.lineSpacing), document.lineHeight(line))
                                 }
 
-                                Label
+                                Column
                                 {
-                                    anchors.fill: _gutterTrack
-                                    visible: index === 0
-                                    opacity: _delegate.isCurrentItem ? 1 : 0.7
-                                    color: control.body.color
-                                    font.family: body.font.family
-                                    font.pointSize: body.font.pointSize
-                                    font.weight: body.font.weight
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignTop
-                                    text: _delegate.line + 1
-                                }
+                                    anchors.fill: parent
+                                    spacing: 0
 
-                                Canvas
-                                {
-                                    anchors.fill: _gutterTrack
-                                    visible: body.wrapMode !== Text.NoWrap && index > 0
-                                    opacity: _delegate.isCurrentItem ? 1 : 0.7
-
-                                    onPaint:
+                                    Repeater
                                     {
-                                        const ctx = getContext("2d")
-                                        ctx.reset()
+                                        model: _delegate.visualLineCount
 
-                                        const color = control.body.color
-                                        const arrowY = height * 0.5
-                                        const stemX = width * 0.5
-                                        const elbowX = width * 0.62
-                                        const tipX = width * 0.9
-                                        const headSize = Math.max(2, Math.min(width, height) * 0.14)
+                                        delegate: Item
+                                        {
+                                            required property int index
 
-                                        ctx.strokeStyle = color
-                                        ctx.fillStyle = color
-                                        ctx.lineWidth = Math.max(1, height * 0.08)
-                                        ctx.lineCap = "round"
-                                        ctx.lineJoin = "round"
+                                            readonly property real gutterTrackWidth:
+                                                Math.max(
+                                                    fontMetrics.averageCharacterWidth * (Math.floor(Math.log10(body.lineCount)) + 1),
+                                                    fontMetrics.averageCharacterWidth * 2
+                                                )
 
-                                        ctx.beginPath()
-                                        ctx.moveTo(stemX, height * 0.18)
-                                        ctx.lineTo(stemX, arrowY)
-                                        ctx.lineTo(elbowX, arrowY)
-                                        ctx.stroke()
+                                            width: parent.width
+                                            height: _delegate.height / _delegate.visualLineCount
 
-                                        ctx.beginPath()
-                                        ctx.moveTo(tipX, arrowY)
-                                        ctx.lineTo(elbowX, arrowY - headSize)
-                                        ctx.lineTo(elbowX, arrowY + headSize)
-                                        ctx.closePath()
-                                        ctx.fill()
+                                            Item
+                                            {
+                                                id: _gutterTrack
+                                                anchors.top: parent.top
+                                                anchors.bottom: parent.bottom
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                width: parent.gutterTrackWidth
+                                            }
+
+                                            Label
+                                            {
+                                                anchors.fill: _gutterTrack
+                                                visible: index === 0
+                                                opacity: _delegate.isCurrentItem ? 1 : 0.7
+                                                color: control.body.color
+                                                font.family: body.font.family
+                                                font.pointSize: body.font.pointSize
+                                                font.weight: body.font.weight
+                                                horizontalAlignment: Text.AlignHCenter
+                                                verticalAlignment: Text.AlignTop
+                                                text: _delegate.line + 1
+                                            }
+
+                                            Item
+                                            {
+                                                anchors.fill: _gutterTrack
+                                                visible: body.wrapMode !== Text.NoWrap && index > 0
+                                                opacity: _delegate.isCurrentItem ? 1 : 0.7
+
+                                                Rectangle
+                                                {
+                                                    color: control.body.color
+                                                    radius: width * 0.5
+                                                    width: Math.max(1, parent.width * 0.08)
+                                                    height: Math.max(1, parent.height * 0.38)
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    anchors.top: parent.top
+                                                    anchors.topMargin: parent.height * 0.18
+                                                }
+
+                                                Rectangle
+                                                {
+                                                    color: control.body.color
+                                                    radius: height * 0.5
+                                                    width: Math.max(1, parent.width * 0.24)
+                                                    height: Math.max(1, parent.height * 0.08)
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    x: parent.width * 0.5
+                                                }
+
+                                                Rectangle
+                                                {
+                                                    color: control.body.color
+                                                    width: Math.max(2, parent.width * 0.12)
+                                                    height: width
+                                                    rotation: 45
+                                                    x: parent.width * 0.74
+                                                    y: (parent.height - height) * 0.5
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-
-                    // AbstractButton
-                    // {
-                    //     visible: foldable
-                    //     Layout.alignment: Qt.AlignVCenter
-                    //     implicitHeight: 8
-                    //     implicitWidth: 8
-                    //     //onClicked:
-                    //     //{
-                    //     //control.goToLine(_delegate.line)
-                    //     //control.document.toggleFold(_delegate.line)
-                    //     //}
-                    //     contentItem: Maui.Icon
-                    //     {
-                    //         source: "go-down"
-                    //         color: isCurrentItem ? control.Maui.Theme.highlightedTextColor  : control.body.color
-                    //     }
-                    // }
                 }
-
             }
         }
 
@@ -998,8 +1078,12 @@ Page
             {
                 id: _linesCounter
                 asynchronous: true
-                active: control.showLineNumbers && !document.isRich && body.lineCount > 1 && control.linesCounterReloadGate
-                onLoaded: control.scheduleLinesCounterReload()
+                active: control.showLineNumbers && !document.isRich && body.lineCount > 1
+                onLoaded:
+                {
+                    control.logGutterDebug("linesCounter loaded")
+                    control.scheduleLinesCounterReload()
+                }
 
                 Layout.fillHeight: true
                 Layout.preferredWidth: active ? fontMetrics.averageCharacterWidth
@@ -1011,14 +1095,10 @@ Page
 
             Timer
             {
-                id: _linesCounterReloadTimer
-                interval: 0
+                id: _linesCounterRebuildDebounceTimer
+                interval: 80
                 repeat: false
-                onTriggered:
-                {
-                    control.linesCounterReloadGate = true
-                    control.scheduleLinesCounterReload()
-                }
+                onTriggered: control.scheduleLinesCounterRebuild()
             }
 
             Connections
@@ -1026,7 +1106,33 @@ Page
                 target: body
                 function onWrapModeChanged()
                 {
+                    control.logGutterDebug("body.wrapMode changed to " + body.wrapMode
+                                           + " contentWidth=" + body.contentWidth
+                                           + " contentHeight=" + body.contentHeight)
                     control.scheduleLinesCounterRebuild()
+                }
+            }
+
+            Connections
+            {
+                target: _flickable
+                function onContentYChanged()
+                {
+                    control.logGutterDebug("flickable contentY changed to " + _flickable.contentY)
+                }
+            }
+
+            Connections
+            {
+                target: body
+                function onContentWidthChanged()
+                {
+                    control.logGutterDebug("body contentWidth changed to " + body.contentWidth)
+                }
+
+                function onContentHeightChanged()
+                {
+                    control.logGutterDebug("body contentHeight changed to " + body.contentHeight)
                 }
             }
 

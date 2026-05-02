@@ -1083,7 +1083,7 @@ int DocumentHandler::lineHeight(const int &line)
         return 0;
     }
 
-    return int(doc->documentLayout()->blockBoundingRect(doc->findBlockByLineNumber(line)).height());
+    return int(doc->documentLayout()->blockBoundingRect(doc->findBlockByNumber(line)).height());
 }
 
 int DocumentHandler::lineCount()
