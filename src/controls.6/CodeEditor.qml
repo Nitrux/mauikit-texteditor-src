@@ -135,6 +135,7 @@ Page
         }
 
         _linesCounter.item.scheduleLayoutRefresh("rebuild")
+        control.wrapTransitionPending = false
     }
 
     function scheduleLinesCounterRebuildDebounced(reason)
@@ -144,7 +145,7 @@ Page
                                + " contentWidth=" + body.contentWidth
                                + " contentHeight=" + body.contentHeight)
 
-        if(body.wrapMode === Text.NoWrap)
+        if(control.shouldUseImmediateLinesCounterRefresh())
         {
             control.scheduleLinesCounterReload()
             return
@@ -156,7 +157,7 @@ Page
     onWidthChanged:
     {
         control.logGutterDebug("editor width changed to " + width)
-        if(body.wrapMode === Text.NoWrap)
+        if(control.shouldUseImmediateLinesCounterRefresh())
         {
             control.scheduleLinesCounterReload()
         }else
@@ -168,7 +169,7 @@ Page
     onHeightChanged:
     {
         control.logGutterDebug("editor height changed to " + height)
-        if(body.wrapMode === Text.NoWrap)
+        if(control.shouldUseImmediateLinesCounterRefresh())
         {
             control.scheduleLinesCounterReload()
         }else
@@ -260,6 +261,7 @@ Page
      * @brief Whether to log gutter and editor geometry for debugging.
      */
     property bool gutterDebugEnabled: false
+    property bool wrapTransitionPending: false
 
     /**
      * @brief Whether the contextual menu should expose the spelling submenu.
@@ -275,6 +277,21 @@ Page
         }
 
         console.log("[CodeEditor gutter]", message)
+    }
+
+    function shouldUseImmediateLinesCounterRefresh()
+    {
+        if(body.wrapMode !== Text.NoWrap || control.wrapTransitionPending)
+        {
+            return false
+        }
+
+        if(!_linesCounter.active || !_linesCounter.item)
+        {
+            return true
+        }
+
+        return !_linesCounter.item.hasPendingWrapGeometry
     }
 
     FontMetrics
@@ -847,6 +864,8 @@ Page
             anchors.topMargin: body.topPadding + body.textMargin
 
             color: document.backgroundColor
+            readonly property bool hasPendingWrapGeometry:
+                body.wrapMode === Text.NoWrap && _linesCounterContent.height > body.contentHeight
 
             function dumpGeometry(reason)
             {
@@ -869,6 +888,7 @@ Page
 
                 control.logGutterDebug(reason
                                        + " wrapMode=" + body.wrapMode
+                                       + " wrapTransitionPending=" + control.wrapTransitionPending
                                        + " flickY=" + _flickable.contentY
                                        + " gutterOffsetY=" + (-_linesCounterContent.y)
                                        + " viewport=" + _flickable.width + "x" + _flickable.height
@@ -902,7 +922,12 @@ Page
 
             on_BodyContentHeightChanged:
             {
-                if(body.wrapMode === Text.NoWrap)
+                if(body.wrapMode === Text.NoWrap && _linesCounterContent.height > body.contentHeight)
+                {
+                    control.wrapTransitionPending = true
+                }
+
+                if(control.shouldUseImmediateLinesCounterRefresh())
                 {
                     scheduleLayoutRefresh("body.contentHeight")
                 }else
@@ -913,7 +938,12 @@ Page
 
             on_BodyContentWidthChanged:
             {
-                if(body.wrapMode === Text.NoWrap)
+                if(body.wrapMode === Text.NoWrap && _linesCounterContent.height > body.contentHeight)
+                {
+                    control.wrapTransitionPending = true
+                }
+
+                if(control.shouldUseImmediateLinesCounterRefresh())
                 {
                     scheduleLayoutRefresh("body.contentWidth")
                 }else
@@ -1110,6 +1140,7 @@ Page
                     control.logGutterDebug("body.wrapMode changed to " + body.wrapMode
                                            + " contentWidth=" + body.contentWidth
                                            + " contentHeight=" + body.contentHeight)
+                    control.wrapTransitionPending = true
                     control.scheduleLinesCounterRebuildDebounced("wrapMode")
                 }
             }
