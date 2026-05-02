@@ -884,7 +884,9 @@ Page
             function scheduleLayoutRefresh(reason)
             {
                 dumpGeometry("scheduleLayoutRefresh(" + reason + ")")
-                _linesCounterLayoutTimer.restart()
+                dumpGeometry("before forceLayout")
+                _linesCounterColumn.forceLayout()
+                dumpGeometry("after forceLayout")
             }
 
             // body.contentHeight / contentWidth are QBindable in Qt 6: they do NOT
@@ -898,27 +900,26 @@ Page
             readonly property int  _bodyContentHeight: body.contentHeight
             readonly property real _bodyContentWidth:  body.contentWidth
 
-            Timer
-            {
-                id: _linesCounterLayoutTimer
-                interval: 0
-                repeat: false
-                onTriggered:
-                {
-                    dumpGeometry("before forceLayout")
-                    _linesCounterColumn.forceLayout()
-                    dumpGeometry("after forceLayout")
-                }
-            }
-
             on_BodyContentHeightChanged:
             {
-                scheduleLayoutRefresh("body.contentHeight")
+                if(body.wrapMode === Text.NoWrap)
+                {
+                    scheduleLayoutRefresh("body.contentHeight")
+                }else
+                {
+                    control.scheduleLinesCounterRebuildDebounced("body.contentHeight")
+                }
             }
 
             on_BodyContentWidthChanged:
             {
-                scheduleLayoutRefresh("body.contentWidth")
+                if(body.wrapMode === Text.NoWrap)
+                {
+                    scheduleLayoutRefresh("body.contentWidth")
+                }else
+                {
+                    control.scheduleLinesCounterRebuildDebounced("body.contentWidth")
+                }
             }
 
             Item
@@ -1109,7 +1110,7 @@ Page
                     control.logGutterDebug("body.wrapMode changed to " + body.wrapMode
                                            + " contentWidth=" + body.contentWidth
                                            + " contentHeight=" + body.contentHeight)
-                    control.scheduleLinesCounterRebuild()
+                    control.scheduleLinesCounterRebuildDebounced("wrapMode")
                 }
             }
 
