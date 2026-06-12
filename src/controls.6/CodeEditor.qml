@@ -1004,14 +1004,7 @@ Page
                                 id: _delegate
 
                                 readonly property int line : index
-                                readonly property int visualLineCount:
-                                {
-                                    let _h = body.contentHeight
-                                    let _w = body.contentWidth
-                                    const rawH = document.lineHeight(line)
-                                    const lineSpacing = Math.ceil(fontMetrics.lineSpacing)
-                                    return body.wrapMode === Text.NoWrap ? 1 : Math.max(1, Math.ceil(rawH / lineSpacing))
-                                }
+                                readonly property int visualLineCount: 1
                                 readonly property bool isCurrentItem : document.currentLineIndex === index
 
                                 width: _linesCounterColumn.width
@@ -1037,8 +1030,8 @@ Page
 
                                             readonly property real gutterTrackWidth:
                                                 Math.max(
-                                                    fontMetrics.averageCharacterWidth * (Math.floor(Math.log10(body.lineCount)) + 1),
-                                                    fontMetrics.averageCharacterWidth * 2
+                                                    fontMetrics.advanceWidth("9") * (Math.floor(Math.log10(Math.max(1, body.lineCount))) + 1),
+                                                    fontMetrics.advanceWidth("9") * 2
                                                 )
 
                                             width: parent.width
@@ -1136,8 +1129,7 @@ Page
                 }
 
                 Layout.fillHeight: true
-                Layout.preferredWidth: active ? fontMetrics.averageCharacterWidth
-                                                * Math.max(2, Math.floor(Math.log10(body.lineCount)) + 1) + 10 : 0
+                Layout.preferredWidth: active ? fontMetrics.advanceWidth("9") * Math.max(2, Math.floor(Math.log10(Math.max(1, body.lineCount))) + 1) + 10 : 0
 
 
                 sourceComponent: _linesCounterComponent
