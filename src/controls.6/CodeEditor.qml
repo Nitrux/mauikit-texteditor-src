@@ -1004,14 +1004,19 @@ Page
                                 id: _delegate
 
                                 readonly property int line : index
-                                readonly property int visualLineCount: 1
+                                readonly property int visualLineCount:
+                                {
+                                    _bodyContentWidth
+                                    _bodyContentHeight
+                                    return Math.max(1, Math.round(document.lineHeight(line) / Math.max(1, fontMetrics.lineSpacing)))
+                                }
                                 readonly property bool isCurrentItem : document.currentLineIndex === index
 
                                 width: _linesCounterColumn.width
                                 height:
                                 {
-                                    let _h = body.contentHeight
-                                    let _w = body.contentWidth
+                                    _bodyContentWidth
+                                    _bodyContentHeight
                                     return Math.max(Math.ceil(fontMetrics.lineSpacing), document.lineHeight(line))
                                 }
 
@@ -1066,35 +1071,17 @@ Page
                                                 visible: body.wrapMode !== Text.NoWrap && index > 0
                                                 opacity: _delegate.isCurrentItem ? 1 : 0.7
 
-                                                Rectangle
+                                                Text
                                                 {
+                                                    anchors.fill: parent
+                                                    text: "↪"
                                                     color: control.body.color
-                                                    radius: width * 0.5
-                                                    width: Math.max(1, parent.width * 0.08)
-                                                    height: Math.max(1, parent.height * 0.38)
-                                                    anchors.horizontalCenter: parent.horizontalCenter
-                                                    anchors.top: parent.top
-                                                    anchors.topMargin: parent.height * 0.18
-                                                }
-
-                                                Rectangle
-                                                {
-                                                    color: control.body.color
-                                                    radius: height * 0.5
-                                                    width: Math.max(1, parent.width * 0.24)
-                                                    height: Math.max(1, parent.height * 0.08)
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    x: parent.width * 0.5
-                                                }
-
-                                                Rectangle
-                                                {
-                                                    color: control.body.color
-                                                    width: Math.max(2, parent.width * 0.12)
-                                                    height: width
-                                                    rotation: 45
-                                                    x: parent.width * 0.74
-                                                    y: (parent.height - height) * 0.5
+                                                    font.family: body.font.family
+                                                    font.pointSize: body.font.pointSize
+                                                    font.weight: body.font.weight
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                    verticalAlignment: Text.AlignVCenter
+                                                    elide: Text.ElideNone
                                                 }
                                             }
                                         }
