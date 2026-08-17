@@ -396,7 +396,7 @@ Page
             {
                 action: Action
                 {
-                    icon.name: "edit-copy-symbolic"
+                    icon.name: "edit-copy"
                     text: i18n("Copy")
                 }
 
@@ -414,7 +414,7 @@ Page
             MenuItem
             {
                 action: Action {
-                    icon.name: "edit-cut-symbolic"
+                    icon.name: "edit-cut"
                     text: i18n("Cut")
                 }
                 onTriggered:
@@ -431,7 +431,7 @@ Page
             {
                 action: Action
                 {
-                    icon.name: "edit-paste-symbolic"
+                    icon.name: "edit-paste"
                     text: i18n("Paste")
                 }
 
@@ -448,7 +448,7 @@ Page
             {
                 action: Action
                 {
-                    icon.name: "edit-select-all-symbolic"
+                    icon.name: "edit-select-all"
                     text: i18n("Select All")
                 }
 
@@ -498,7 +498,7 @@ Page
                 visible: enabled
                 height: visible ? implicitHeight : -_menu.spacing
                 text: i18n("Save as Contact")
-                icon.name: "contact-new-symbolic"
+                icon.name: "list-add-user"
                 onTriggered: Qt.openUrlExternally("tel:"+control.body.selectedText)
             }
             
@@ -509,7 +509,7 @@ Page
                 visible: enabled
                 height: visible ? implicitHeight : -_menu.spacing
                 text: i18n("Open Link")
-                icon.name: "website-symbolic"
+                icon.name: "internet-web-browser"
                 onTriggered: Qt.openUrlExternally(control.body.selectedText)
             }
 
@@ -531,7 +531,7 @@ Page
                 height: visible ? implicitHeight : -_menu.spacing
                 action: Action
                 {
-                    icon.name: "edit-delete-symbolic"
+                    icon.name: "edit-delete"
                     text: i18n("Delete")
                 }
                 
