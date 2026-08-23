@@ -86,7 +86,6 @@ Alerts::Alerts(QObject *parent)
 
 Alerts::~Alerts()
 {
-    qDebug() << "REMOVING ALL DOCUMENTS ALERTS" << this->m_alerts.size();
     for (auto *alert : std::as_const(m_alerts)) {
         delete alert;
         alert = nullptr;
