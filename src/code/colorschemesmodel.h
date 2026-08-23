@@ -7,6 +7,13 @@
 #include <KSyntaxHighlighting/Repository>
 #include <KSyntaxHighlighting/Theme>
 
+/**
+ * @brief Lists the syntax-highlighting themes available from KSyntaxHighlighting.
+ *
+ * Each row exposes the theme name and representative foreground, background,
+ * highlight, and accent colors for previews. The list is populated after the
+ * QML component is complete.
+ */
 class ColorSchemesModel : public QAbstractListModel, public QQmlParserStatus
 {
     Q_INTERFACES(QQmlParserStatus)

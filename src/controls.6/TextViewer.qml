@@ -6,6 +6,12 @@ import org.mauikit.texteditor as TE
 
 Maui.Page
 {
+    /**
+     * @brief Read-only plain-text file viewer with selection and copy support.
+     *
+     * Assign fileUrl (or its path alias) to load a document. body exposes the
+     * TextArea and document exposes the backing DocumentHandler.
+     */
     id: control
 
     property alias path: _document.fileUrl

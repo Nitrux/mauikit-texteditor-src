@@ -6,6 +6,12 @@
 #include <QAbstractItemModel>
 #include <QQmlEngine>
 
+/**
+ * @brief Provides consecutive one-based line numbers for an editor gutter.
+ *
+ * Set lineCount to the number of document lines; each model row exposes its
+ * display value as the corresponding line number.
+ */
 class LineNumberModel : public QAbstractListModel
 {
     Q_OBJECT

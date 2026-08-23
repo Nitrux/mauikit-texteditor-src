@@ -71,7 +71,7 @@ class SyntaxHighlighter;
 }
 
 /**
- * @brief The AlertAction struct
+ * @brief Pairs an alert action label with the callback it invokes.
  */
 struct AlertAction
 {
@@ -80,7 +80,7 @@ struct AlertAction
 };
 
 /**
- * @brief The DocumentAlert class
+ * @brief Describes a document warning and the actions available to resolve it.
  */
 class DocumentAlert : public QObject
 {
@@ -102,28 +102,19 @@ public:
         this->m_id = id;
     }
 
-    /**
-     * @brief setIndex
-     * @param index
-     */
+    /** Associates this alert with its row index in the alerts model. */
     void setIndex(const int &index)
     {
         this->m_index = index;
     }
 
-    /**
-     * @brief setActions
-     * @param actions
-     */
+    /** Replaces the actions presented for this alert. */
     void setActions(QVector<AlertAction> actions)
     {
         this->m_actions = actions;
     }
 
-    /**
-     * @brief getId
-     * @return
-     */
+    /** Returns the stable identifier used to detect duplicate alerts. */
     int getId() const
     {
         return this->m_id;
@@ -140,10 +131,7 @@ public:
         return other.getId() == other2.getId();
     }
 
-    /**
-     * @brief actionLabels
-     * @return
-     */
+    /** Returns the action labels in invocation order. */
     QStringList actionLabels() const
     {
         return std::accumulate(this->m_actions.constBegin(), this->m_actions.constEnd(), QStringList(), [](QStringList &labels, const AlertAction &action) -> QStringList {
@@ -162,11 +150,7 @@ private:
     QVector<AlertAction> m_actions;
 
 public Q_SLOTS:
-    /**
-     * @brief triggerAction
-     * @param actionIndex
-     * @param alertIndex
-     */
+    /** Invokes an action and emits done() for the alert row. */
     void triggerAction(const int &actionIndex, const int &alertIndex)
     {
         qDebug() << "TRIGGERING DOCUMENT ACTION AT INDEX << " << actionIndex << alertIndex;
@@ -175,15 +159,12 @@ public Q_SLOTS:
     }
 
 Q_SIGNALS:
-    /**
-     * @brief done
-     * @param index
-     */
+    /** Emitted after an action completes, with the alert row to dismiss. */
     void done(int index);
 };
 
 /**
- * @brief The Alerts class
+ * @brief List model of unresolved alerts associated with a document.
  */
 class Alerts : public QAbstractListModel
 {
@@ -208,30 +189,23 @@ private:
 };
 
 /**
- * @brief The FileLoader class
+ * @brief Loads a text file asynchronously and emits its contents when ready.
  */
 class FileLoader : public QObject
 {
     Q_OBJECT
 
 public Q_SLOTS:
-    /**
-     * @brief loadFile
-     * @param url
-     */
+    /** Loads the local file at @p url. */
     void loadFile(const QUrl &url);
 
 Q_SIGNALS:
-    /**
-     * @brief fileReady
-     * @param array
-     * @param url
-     */
+    /** Emitted with the loaded text and its source URL. */
     void fileReady(QString array, QUrl url);
 };
 
 /**
- * @brief The DocumentHandler class.
+ * @brief Manages file I/O, formatting, search, alerts, and syntax highlighting for a QML text document.
  * @note This is not part of any public API, and it is only exposed as part of
  * the text editor controls.
  * 
@@ -240,164 +214,100 @@ class DocumentHandler : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
-    /**
-     * 
-     */
+    /** The QML text document managed by this handler. */
     Q_PROPERTY(QQuickTextDocument *document READ document WRITE setDocument NOTIFY documentChanged)
     
-   /**
-     * 
-     */
+    /** The current cursor position as a character offset. */
     Q_PROPERTY(int cursorPosition READ cursorPosition WRITE setCursorPosition NOTIFY cursorPositionChanged)
     
-    /**
-     * 
-     */
+    /** The first character offset of the current selection. */
     Q_PROPERTY(int selectionStart READ selectionStart WRITE setSelectionStart NOTIFY selectionStartChanged)
     
-    /**
-     * 
-     */
+    /** The character offset immediately after the current selection. */
     Q_PROPERTY(int selectionEnd READ selectionEnd WRITE setSelectionEnd NOTIFY selectionEndChanged)
 
-    /**
-     * 
-     */
+    /** The text color at the cursor or across the current selection. */
     Q_PROPERTY(QColor textColor READ textColor WRITE setTextColor NOTIFY textColorChanged)
     
-    /**
-     * 
-     */
+    /** The font family at the cursor or across the current selection. */
     Q_PROPERTY(QString fontFamily READ fontFamily WRITE setFontFamily NOTIFY fontFamilyChanged)
     
-    /**
-     * 
-     */
+    /** The paragraph alignment at the current cursor position. */
     Q_PROPERTY(Qt::Alignment alignment READ alignment WRITE setAlignment NOTIFY alignmentChanged)
 
-    /**
-     * 
-     */
+    /** Whether text at the cursor or in the current selection is bold. */
     Q_PROPERTY(bool bold READ bold WRITE setBold NOTIFY boldChanged)
     
-    /**
-     * 
-     */
+    /** Whether uppercase capitalization is active at the cursor or selection. */
     Q_PROPERTY(bool uppercase READ uppercase WRITE setUppercase NOTIFY uppercaseChanged)
     
-    /**
-     * 
-     */
+    /** Whether text at the cursor or in the current selection is italic. */
     Q_PROPERTY(bool italic READ italic WRITE setItalic NOTIFY italicChanged)
     
-    /**
-     * 
-     */
+    /** Whether text at the cursor or in the current selection is underlined. */
     Q_PROPERTY(bool underline READ underline WRITE setUnderline NOTIFY underlineChanged)
     
-    /**
-     * 
-     */
+    /** Whether the loaded text was detected as rich text. */
     Q_PROPERTY(bool isRich READ getIsRich NOTIFY isRichChanged)
 
-    /**
-     * 
-     */
+    /** The number of text blocks in the document. */
     Q_PROPERTY(int lineCount READ lineCount NOTIFY lineCountChanged)
     
-    /**
-     * 
-     */
+    /** The font point size at the cursor or across the current selection. */
     Q_PROPERTY(int fontSize READ fontSize WRITE setFontSize NOTIFY fontSizeChanged)
     
-    /**
-     * 
-     */
+    /** The tab-stop distance in document layout units. */
     Q_PROPERTY(qreal tabSpace READ tabSpace WRITE setTabSpace NOTIFY tabSpaceChanged)
     
-    /**
-     * 
-     */
+    /** The current file name, or untitled.txt when no file is set. */
     Q_PROPERTY(QString fileName READ fileName NOTIFY fileUrlChanged)
     
-    /**
-     * 
-     */
+    /** The suffix of the current file name. */
     Q_PROPERTY(QString fileType READ fileType NOTIFY fileUrlChanged)
 
-    /**
-     * 
-     */
+    /** Metadata describing the current local file. */
     Q_PROPERTY(QVariantMap fileInfo READ fileInfo NOTIFY fileInfoChanged)
     
-    /**
-     * 
-     */
+    /** The URL loaded by this handler. */
     Q_PROPERTY(QUrl fileUrl READ fileUrl WRITE setFileUrl NOTIFY fileUrlChanged)
 
-    /**
-     * 
-     */
+    /** The document text being edited. */
     Q_PROPERTY(QString text READ text WRITE setText NOTIFY textChanged)
 
-    /**
-     * 
-     */
+    /** Whether the file changed on disk after it was loaded. */
     Q_PROPERTY(bool externallyModified READ getExternallyModified NOTIFY externallyModifiedChanged)
 
-    /**
-     * 
-     */
+    /** Whether the document has unsaved internal changes. */
     Q_PROPERTY(bool modified READ getModified NOTIFY modifiedChanged)
 
-     /**
-     * 
-     */
+    /** Whether externally modified files are reloaded automatically. */
     Q_PROPERTY(bool autoReload READ getAutoReload WRITE setAutoReload NOTIFY autoReloadChanged)
     
-     /**
-     * 
-     */
+    /** Whether modified documents are saved periodically. */
     Q_PROPERTY(bool autoSave READ autoSave WRITE setAutoSave NOTIFY autoSaveChanged)
 
-     /**
-     * 
-     */
+    /** The KSyntaxHighlighting definition name applied to the document. */
     Q_PROPERTY(QString formatName READ formatName WRITE setFormatName NOTIFY formatNameChanged)
 
-     /**
-     * 
-     */
+    /** The zero-based line containing the cursor, or -1 without a document. */
     Q_PROPERTY(int currentLineIndex READ getCurrentLineIndex NOTIFY currentLineIndexChanged)
 
-     /**
-     * 
-     */
+    /** The model of unresolved file and document alerts. */
     Q_PROPERTY(Alerts *alerts READ getAlerts CONSTANT FINAL)
 
-     /**
-     * 
-     */
+    /** The editor background used to choose a default highlighting theme. */
     Q_PROPERTY(QColor backgroundColor READ getBackgroundColor WRITE setBackgroundColor NOTIFY backgroundColorChanged)
 
-     /**
-     * 
-     */
+    /** The KSyntaxHighlighting theme name; empty selects a theme from backgroundColor. */
     Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
 
-     /**
-     * 
-     */
+    /** Whether syntax highlighting is enabled. */
     Q_PROPERTY(bool enableSyntaxHighlighting READ enableSyntaxHighlighting WRITE setEnableSyntaxHighlighting NOTIFY enableSyntaxHighlightingChanged)    
         
-     /**
-     * 
-     */
+    /** Whether find operations match only complete words. */
     Q_PROPERTY(bool findWholeWords MEMBER m_findWholeWords NOTIFY findWholeWordsChanged)    
     
-     /**
-     * 
-     */
+    /** Whether find operations distinguish letter case. */
     Q_PROPERTY(bool findCaseSensitively MEMBER m_findCaseSensitively NOTIFY findCaseSensitivelyChanged)
 
 public:
@@ -411,305 +321,157 @@ public:
      */
     ~DocumentHandler();
 
-    /**
-     * @brief document
-     * @return
-     */
+    /** Returns the managed QML text document. */
     QQuickTextDocument *document() const;
 
-    /**
-     * @brief setDocument
-     * @param document
-     */
+    /** Sets the QML text document to manage. */
     void setDocument(QQuickTextDocument *document);
 
-    /**
-     * @brief cursorPosition
-     * @return
-     */
+    /** Returns the current character-offset cursor position. */
     int cursorPosition() const;
 
-    /**
-     * @brief setCursorPosition
-     * @param position
-     */
+    /** Moves the cursor state to the character offset @p position. */
     void setCursorPosition(int position);
 
-    /**
-     * @brief selectionStart
-     * @return
-     */
+    /** Returns the first character offset of the selection. */
     int selectionStart() const;
 
-    /**
-     * @brief setSelectionStart
-     * @param position
-     */
+    /** Sets the first character offset of the selection. */
     void setSelectionStart(int position);
 
-    /**
-     * @brief selectionEnd
-     * @return
-     */
+    /** Returns the character offset immediately after the selection. */
     int selectionEnd() const;
 
-    /**
-     * @brief setSelectionEnd
-     * @param position
-     */
+    /** Sets the character offset immediately after the selection. */
     void setSelectionEnd(int position);
 
-    /**
-     * @brief fontFamily
-     * @return
-     */
+    /** Returns the font family at the cursor or selection. */
     QString fontFamily() const;
 
-    /**
-     * @brief setFontFamily
-     * @param family
-     */
+    /** Applies @p family at the cursor or to the selection. */
     void setFontFamily(const QString &family);
 
-    /**
-     * @brief textColor
-     * @return
-     */
+    /** Returns the text color at the cursor or selection. */
     QColor textColor() const;
 
-    /**
-     * @brief setTextColor
-     * @param color
-     */
+    /** Applies @p color at the cursor or to the selection. */
     void setTextColor(const QColor &color);
 
-    /**
-     * @brief alignment
-     * @return
-     */
+    /** Returns the alignment of the current text block. */
     Qt::Alignment alignment() const;
 
-    /**
-     * @brief setAlignment
-     * @param alignment
-     */
+    /** Sets the alignment of the current text block. */
     void setAlignment(Qt::Alignment alignment);
 
-    /**
-     * @brief bold
-     * @return
-     */
+    /** Returns whether the cursor or selection uses bold text. */
     bool bold() const;
 
-    /**
-     * @brief setBold
-     * @param bold
-     */
+    /** Enables or disables bold formatting at the cursor or selection. */
     void setBold(bool bold);
 
-    /**
-     * @brief uppercase
-     * @return
-     */
+    /** Returns whether uppercase capitalization is active. */
     bool uppercase() const;
 
-    /**
-     * @brief setUppercase
-     * @param uppercase
-     */
+    /** Enables or disables uppercase capitalization. */
     void setUppercase(bool uppercase);
 
-    /**
-     * @brief italic
-     * @return
-     */
+    /** Returns whether the cursor or selection uses italic text. */
     bool italic() const;
 
-    /**
-     * @brief setItalic
-     * @param italic
-     */
+    /** Enables or disables italic formatting at the cursor or selection. */
     void setItalic(bool italic);
 
-    /**
-     * @brief underline
-     * @return
-     */
+    /** Returns whether the cursor or selection uses underlined text. */
     bool underline() const;
 
-    /**
-     * @brief setUnderline
-     * @param underline
-     */
+    /** Enables or disables underline formatting at the cursor or selection. */
     void setUnderline(bool underline);
 
-    /**
-     * @brief getIsRich
-     * @return
-     */
+    /** Returns whether the loaded text was detected as rich text. */
     bool getIsRich() const;
 
-    /**
-     * @brief fontSize
-     * @return
-     */
+    /** Returns the font point size at the cursor or selection. */
     int fontSize() const;
 
-    /**
-     * @brief setFontSize
-     * @param size
-     */
+    /** Applies the font point @p size at the cursor or selection. */
     void setFontSize(int size);
 
     qreal tabSpace() const;
     void setTabSpace(qreal value);
 
-    /**
-     * @brief fileName
-     * @return
-     */
+    /** Returns the current file name, or untitled.txt when unset. */
     QString fileName() const;
 
-    /**
-     * @brief fileType
-     * @return
-     */
+    /** Returns the current file-name suffix. */
     QString fileType() const;
 
-    /**
-     * @brief fileUrl
-     * @return
-     */
+    /** Returns the URL associated with the document. */
     QUrl fileUrl() const;
 
-    /**
-     * @brief setFileUrl
-     * @param url
-     */
+    /** Associates the document with @p url and starts loading it. */
     void setFileUrl(const QUrl &url);
 
-    /**
-     * @brief fileInfo
-     * @return
-     */
+    /** Returns metadata for the current local file. */
     QVariantMap fileInfo() const;
 
-    /**
-     * @brief text
-     * @return
-     */
+    /** Returns the document text. */
     inline QString text() const
     {
         return m_text;
     }
 
-    /**
-     * @brief setText
-     * @param text
-     */
+    /** Replaces the document text. */
     void setText(const QString &text);
 
-    /**
-     * @brief getAutoReload
-     * @return
-     */
+    /** Returns whether externally changed files reload automatically. */
     bool getAutoReload() const;
 
-    /**
-     * @brief setAutoReload
-     * @param value
-     */
+    /** Enables or disables automatic reload after external changes. */
     void setAutoReload(const bool &value);
 
-    /**
-     * @brief autoSave
-     * @return
-     */
+    /** Returns whether periodic automatic saving is enabled. */
     bool autoSave() const;
 
-    /**
-     * @brief setAutoSave
-     * @param value
-     */
+    /** Enables or disables periodic automatic saving. */
     void setAutoSave(const bool &value);
 
-    /**
-     * @brief getModified
-     * @return
-     */
+    /** Returns whether the document has unsaved internal changes. */
     bool getModified() const;
 
-    /**
-     * @brief getExternallyModified
-     * @return
-     */
+    /** Returns whether the file has changed on disk. */
     bool getExternallyModified() const;
 
-    /**
-     * @brief setExternallyModified
-     * @param value
-     */
+    /** Updates the externally-modified state. */
     void setExternallyModified(const bool &value);
 
-    /**
-     * @brief formatName
-     * @return
-     */
+    /** Returns the active KSyntaxHighlighting definition name. */
     QString formatName() const;
 
-    /**
-     * @brief setFormatName
-     * @param formatName
-     */
+    /** Selects a KSyntaxHighlighting definition by name. */
     void setFormatName(const QString &formatName);
 
-    /**
-     * @brief getBackgroundColor
-     * @return
-     */
+    /** Returns the editor background used for automatic theme selection. */
     QColor getBackgroundColor() const;
 
-    /**
-     * @brief setBackgroundColor
-     * @param color
-     */
+    /** Sets the editor background used for automatic theme selection. */
     void setBackgroundColor(const QColor &color);
 
-    /**
-     * @brief getAlerts
-     * @return
-     */
+    /** Returns the document alert model. */
     Alerts *getAlerts() const;
 
-    /**
-     * @brief theme
-     * @return
-     */
+    /** Returns the selected KSyntaxHighlighting theme name. */
     QString theme() const;
 
-    /**
-     * @brief setTheme
-     * @param theme
-     */
+    /** Selects a KSyntaxHighlighting theme by name. */
     void setTheme(const QString &theme);
 
-    /**
-     * @brief enableSyntaxHighlighting
-     * @return
-     */
+    /** Returns whether syntax highlighting is enabled. */
     bool enableSyntaxHighlighting() const;
 
-    /**
-     * @brief setEnableSyntaxHighlighting
-     * @param value
-     */
+    /** Enables or disables syntax highlighting. */
     void setEnableSyntaxHighlighting(const bool &value);
     
-    /**
-     * @brief isDark
-     * @param color
-     * @return
-     */
+    /** Returns whether @p color has dark perceived luminance. */
     static bool isDark(const QColor &color)
     {
         const double darkness = 1 - (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255;
@@ -717,24 +479,15 @@ public:
     }
 
 private Q_SLOTS:
-    /**
-     * @brief load
-     * @param url
-     */
+    /** Loads the document contents from @p url. */
     void load(const QUrl &url);
 
 public Q_SLOTS:
 
-    /**
-     * @brief saveAs
-     * @param url
-     */
+    /** Writes the document to @p url and associates the handler with it. */
     void saveAs(const QUrl &url);
 
-    /**
-     * @brief find
-     * @param query
-     */
+    /** Finds the next or previous occurrence of @p query. */
     void find(const QString &query, const bool &forward = true);
 
     void replace(const QString &query, const QString &value);
@@ -745,34 +498,20 @@ public Q_SLOTS:
     bool isFolded(const int &line) const;
     void toggleFold(const int &line);
 
-    /**
-     * @brief lineHeight
-     * @param line
-     * @return
-     */
+    /** Returns the layout height of the zero-based @p line. */
     int lineHeight(const int &line);
     
     int lineCount();
 
-    /**
-     * @brief getCurrentLineIndex
-     * @return
-     */
+    /** Returns the zero-based line containing the cursor, or -1. */
     int getCurrentLineIndex();
     
     int goToLine(const int &line);
 
-    /**
-     * @brief getLanguageNameList
-     * @return
-     */
+    /** Returns the available syntax-definition names. */
     static const QStringList getLanguageNameList();
 
-    /**
-     * @brief getLanguageNameFromFileName
-     * @param fileName
-     * @return
-     */
+    /** Returns the syntax-definition name inferred from @p fileName. */
     static const QString getLanguageNameFromFileName(const QUrl &fileName);
 
 Q_SIGNALS:
