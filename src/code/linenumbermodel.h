@@ -5,6 +5,7 @@
 
 #include <QAbstractItemModel>
 #include <QQmlEngine>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 /**
  * @brief Provides consecutive one-based line numbers for an editor gutter.

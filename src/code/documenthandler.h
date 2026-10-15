@@ -60,6 +60,7 @@
 #include <QUrl>
 #include <QQuickTextDocument>
 #include <QQmlEngine>
+#include <QtQmlIntegration/qqmlintegration.h>
 
 class QFileSystemWatcher;
 class QTextDocument;

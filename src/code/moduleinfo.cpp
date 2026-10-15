@@ -1,5 +1,5 @@
 #include "moduleinfo.h"
-#include "../texteditor_version.h"
+#include "texteditor_version.h"
 #include <KLocalizedString>
 
 QString MauiKitTextEditor::versionString()

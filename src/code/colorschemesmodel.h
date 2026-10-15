@@ -1,7 +1,9 @@
 #pragma once
 #include <QObject>
 #include <QAbstractListModel>
-#include <QQmlParserStatus>
+#include <QtQmlIntegration/qqmlintegration.h>
+#include <QtQml>
+#include <QtQml/qqmlparserstatus.h>
 #include <QQmlEngine>
 
 #include <KSyntaxHighlighting/Repository>
