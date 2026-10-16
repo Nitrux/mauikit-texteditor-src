@@ -33,12 +33,12 @@ qml_dir = get_option('libdir') / 'qt6/qml/org/mauikit/texteditor'
 install_data(configure_file(
     input: 'meson-content.in',
     output: 'qmldir',
-    configuration: {'CONTENT': ('module org.mauikit.texteditor\nplugin MauiKitTextEditor4plugin\n')}
+    configuration: {'CONTENT': ('module org.mauikit.texteditor\ndepends org.mauikit.controls\nplugin MauiKitTextEditor4plugin\n')}
 ), install_dir: qml_dir)
 install_subdir('src/controls.6', install_dir: qml_dir, strip_directory: true)
 install_headers(files('src/code/moduleinfo.h') + [export_header], subdir: 'MauiKit4/TextEditor')
 pkg = import('pkgconfig')
-pkg.generate(lib, name: 'MauiKit Text Editor 4', filebase: 'MauiKitTextEditor4', version: meson.project_version(), description: 'MauiKit text editor library', requires: 'MauiKit4')
+pkg.generate(lib, name: 'MauiKit Text Editor 4', filebase: 'MauiKitTextEditor4', version: meson.project_version(), description: 'MauiKit text editor library', requires: 'MauiKit4 Qt6Core Qt6Core5Compat Qt6Qml Qt6Quick KF6CoreAddons KF6I18n KF6SyntaxHighlighting')
 
 cmake_targets = configure_file(
     input: 'meson-content.in',
@@ -48,7 +48,8 @@ if(NOT TARGET MauiKitTextEditor4)
   add_library(MauiKitTextEditor4 SHARED IMPORTED)
   set_target_properties(MauiKitTextEditor4 PROPERTIES
     IMPORTED_LOCATION "${_MAUIKIT_PREFIX}/@LIBDIR@/libMauiKitTextEditor4.so.4.0.5"
-    INTERFACE_INCLUDE_DIRECTORIES "${_MAUIKIT_PREFIX}/include/MauiKit4/TextEditor")
+    INTERFACE_INCLUDE_DIRECTORIES "${_MAUIKIT_PREFIX}/include/MauiKit4/TextEditor"
+    INTERFACE_LINK_LIBRARIES "Qt6::Core;Qt6::Core5Compat;Qt6::Qml;Qt6::Quick;KF6::CoreAddons;KF6::I18n;KF6::SyntaxHighlighting;MauiKit4")
 endif()
 if(NOT TARGET MauiKit4::TextEditor)
   add_library(MauiKit4::TextEditor ALIAS MauiKitTextEditor4)
@@ -62,7 +63,9 @@ cmake_config = configure_file(
     input: 'meson-content.in',
     output: 'MauiKitTextEditor4Config.cmake',
     configuration: {'CONTENT': ('''include(CMakeFindDependencyMacro)
-find_dependency(Qt6 6.4 COMPONENTS Core)
+find_dependency(Qt6 6.4 COMPONENTS Core Core5Compat Qml Quick)
+find_dependency(KF6 6.13.0 COMPONENTS CoreAddons I18n SyntaxHighlighting)
+find_dependency(MauiKit4 4.0.5 CONFIG)
 include("${CMAKE_CURRENT_LIST_DIR}/MauiKitTextEditor4Targets.cmake")
 set(MauiKitTextEditor4_FOUND TRUE)
 ''')}
@@ -80,3 +83,20 @@ endif()
 ''')).replace('@VERSION@', (meson.project_version()))}
 )
 install_data([cmake_targets, cmake_config, cmake_version], install_dir: get_option('libdir') / 'cmake' / 'MauiKitTextEditor4')
+
+translation_domain = 'mauikittexteditor'
+msgfmt = find_program('msgfmt')
+po_files = run_command('find', 'po', '-mindepth', '2', '-maxdepth', '2', '-type', 'f', '-name', translation_domain + '.po', check: true).stdout().strip().split('\n')
+foreach po_file : po_files
+    if po_file != ''
+        locale = po_file.split('/')[1]
+        custom_target(
+            'translation-' + locale,
+            input: po_file,
+            output: locale / (translation_domain + '.mo'),
+            command: [msgfmt, '--check', '-o', '@OUTPUT@', '@INPUT@'],
+            install: true,
+            install_dir: get_option('localedir') / locale / 'LC_MESSAGES',
+            install_tag: 'i18n')
+    endif
+endforeach
