@@ -1,4 +1,4 @@
-project('mauikit-texteditor', 'cpp', version: '4.0.5', meson_version: '>=1.0.0', default_options: ['cpp_std=c++17', 'buildtype=release'])
+project('mauikit-texteditor', 'cpp', version: '4.0.5', meson_version: '>=1.10.0', default_options: ['cpp_std=c++17', 'buildtype=release'])
 
 cpp_compiler = meson.get_compiler('cpp')
 if cpp_compiler.get_id() == 'gcc' and cpp_compiler.has_argument('-Wno-sfinae-incomplete')
@@ -93,7 +93,8 @@ foreach po_file : po_files
         custom_target(
             'translation-' + locale,
             input: po_file,
-            output: locale / (translation_domain + '.mo'),
+            output: translation_domain + '.mo',
+            build_subdir: locale,
             command: [msgfmt, '--check', '-o', '@OUTPUT@', '@INPUT@'],
             install: true,
             install_dir: get_option('localedir') / locale / 'LC_MESSAGES',
