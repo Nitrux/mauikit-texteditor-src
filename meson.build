@@ -38,7 +38,7 @@ install_data(configure_file(
 install_subdir('src/controls.6', install_dir: qml_dir, strip_directory: true)
 install_headers(files('src/code/moduleinfo.h') + [export_header], subdir: 'MauiKit4/TextEditor')
 pkg = import('pkgconfig')
-pkg.generate(lib, name: 'MauiKit Text Editor 4', filebase: 'MauiKitTextEditor4', version: meson.project_version(), description: 'MauiKit text editor library', requires: 'MauiKit4 Qt6Core Qt6Core5Compat Qt6Qml Qt6Quick KF6CoreAddons KF6I18n KF6SyntaxHighlighting')
+pkg.generate(lib, name: 'MauiKit Text Editor 4', filebase: 'MauiKitTextEditor4', version: meson.project_version(), description: 'MauiKit text editor library', requires: 'MauiKit4 Qt6Core Qt6Core5Compat Qt6Qml Qt6Quick')
 
 cmake_targets = configure_file(
     input: 'meson-content.in',
