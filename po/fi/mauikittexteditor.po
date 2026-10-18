@@ -143,7 +143,7 @@ msgstr "Liitä"
 
 #: src/controls.6/TextEditor.qml:355
 #, kde-format
-msgid "Select All"
+msgid "Select all"
 msgstr "Valitse kaikki"
 
 #: src/controls.6/TextEditor.qml:370

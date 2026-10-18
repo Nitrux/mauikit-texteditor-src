@@ -144,7 +144,7 @@ msgstr "चिनोतु"
 
 #: src/controls.6/TextEditor.qml:355
 #, kde-format
-msgid "Select All"
+msgid "Select all"
 msgstr "सर्वं चिनोतु"
 
 #: src/controls.6/TextEditor.qml:370

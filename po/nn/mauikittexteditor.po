@@ -143,7 +143,7 @@ msgstr "Lim inn"
 
 #: src/controls.6/TextEditor.qml:355
 #, kde-format
-msgid "Select All"
+msgid "Select all"
 msgstr "Merk alt"
 
 #: src/controls.6/TextEditor.qml:370

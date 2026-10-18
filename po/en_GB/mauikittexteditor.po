@@ -144,7 +144,7 @@ msgstr "Paste"
 
 #: src/controls.6/TextEditor.qml:355
 #, kde-format
-msgid "Select All"
+msgid "Select all"
 msgstr "Select All"
 
 #: src/controls.6/TextEditor.qml:370

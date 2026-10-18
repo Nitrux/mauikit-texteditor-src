@@ -147,7 +147,7 @@ msgstr "Itsatsi"
 
 #: src/controls.6/TextEditor.qml:355
 #, kde-format
-msgid "Select All"
+msgid "Select all"
 msgstr "Hautatu dena"
 
 #: src/controls.6/TextEditor.qml:370

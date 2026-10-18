@@ -141,7 +141,7 @@ msgstr ""
 #: src/controls.6/TextEditor.qml:355
 #, fuzzy, kde-format
 #| msgid "Replace All"
-msgid "Select All"
+msgid "Select all"
 msgstr "Alle ersetzen"
 
 #: src/controls.6/TextEditor.qml:370
