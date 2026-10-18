@@ -449,7 +449,7 @@ Page
                 action: Action
                 {
                     icon.name: "edit-select-all"
-                    text: i18n("Select All")
+                    text: i18n("Select all")
                 }
 
                 onTriggered:

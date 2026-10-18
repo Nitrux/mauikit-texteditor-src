@@ -104,7 +104,7 @@ Page
 
         MenuItem
         {
-            text: i18n("Select All")
+            text: i18n("Select all")
             onTriggered: body.selectAll()
         }
     }

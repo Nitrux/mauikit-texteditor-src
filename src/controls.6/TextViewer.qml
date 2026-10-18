@@ -55,7 +55,7 @@ Maui.Page
 
         MenuItem
         {
-            text: i18n("Select All")
+            text: i18n("Select all")
             onTriggered: _textArea.selectAll()
         }
     }
